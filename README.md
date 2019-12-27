@@ -1,6 +1,6 @@
 # ksen
 
-A Clojure library designed to ... well, that part is up to you.
+Table parser drawn by box drawing character.
 
 ## Usage
 
