@@ -1,33 +1,77 @@
-(ns ksen.core)
+(ns ksen.core
+  (:refer-clojure :exclude [read])
+  (:import [java.io StringReader PushbackReader]))
+
+(defrecord TwoDimensionPointReader [^PushbackReader reader x y])
+(defprotocol ITwoDimensionPointReader
+  (inc-x [this])
+  (inc-y [this])
+  (read [this])
+  (unread [this c]))
+(extend-protocol ITwoDimensionPointReader
+  TwoDimensionPointReader
+  (read [{:keys [reader x y]}]
+    (let [res {:c (.read reader) :x @x :y @y}]
+      (case (:c res)
+        10 (swap! y inc)
+        13 (swap! y inc)
+        32 (swap! y inc)
+        (swap! x inc))
+      res))
+  (unread [{:keys [reader x y]} c]
+    (case c
+      10 (swap! y dec)
+      13 (swap! y dec)
+      32 (swap! y dec)
+      (swap! x dec))
+    (.unread reader c)
+    nil))
+(defn- create-reader [s]
+  (->TwoDimensionPointReader (PushbackReader. (StringReader. s))
+                             (atom 0)
+                             (atom 0)))
+
+(defn- read-border-top [reader]
+  (loop [buffer []]
+    (let [{:keys [c x y]} (read reader)]
+      (case c
+        ;; 中央から右と下に伸びるやつ
+        9484 (recur (conj buffer {:left x :top y}))
+        ;; 横線
+        9472 (recur buffer)
+        ;; 中央から上以外に伸びるやつ
+        9516 (recur (-> buffer
+                        (update-in buffer [(- (count buffer) 1)]
+                                   #(assoc % :width (- x (- (:left %) 1))))
+                        (conj buffer {:left x :top y})))
+        ;; 中央から左と下に伸びるやつ. これが来たら終わり.
+        ;; FIXME: 行の最後まで読めてない. 同じ行に別の表が入ってたら壊れる.
+        9488 (update-in buffer [(- (count buffer) 1)]
+                        #(assoc % :width (- x (- (:left %) 1))))))))
+
+(defn- read-body [reader]
+  (loop [buffer []]
+    (let [{:keys [c x y]} (read reader)]
+      (case c
+        ;; 縦線
+        9474
+        ;; TODO: まだ箱がなければ最初の箱を登録する
+        ;; TODO: ...うーん、これでいいのか...？
+        nil))))
 
 (defn read-str
   [s]
-  ;; TODO: 行を読み込むためのバッファを用意する
-  ;; TODO: 区切り線が出てきた位置を記憶しつつ1行読む
-  ;; TODO: 2行目は、区切り位置を見比べながらデータを格納していく
-  ;; TODO: 横線が箱を閉じる形で表れたら、データを確定する。
-  ;; 多分、確定前の一時バッファと確定したデータを貯めるバッファの2つが必要
-  ;; clojure.data.jsonはloopでちょっとずつ結果を蓄積していってる
-  ;; https://github.com/clojure/data.json/blob/master/src/main/clojure/clojure/data/json.clj#L36-L57
-  ;; ここらへんで、codepointとそれが来た時の処理を生成してる
-  (let [reader (java.io.StringReader. s)]
-    (loop [result []
-           x 0
-           y 0]
-      (let [c (.read reader)]
-        ;; TODO: 閉じ角が来たらlengthを記録する。もし次のセルが始まるならそれも記録する
+  (let [reader (create-reader s)]
+    (loop [result []]
+      (let [{:keys [c x y]} (read reader)]
         (case c
+          ;; 中央から右と下に伸びるやつ
+          9484 (do (unread reader c)
+                   (recur (concat result (read-border-top reader))))
           ;; 上から下のヤツ
-          ;; TODO: まだ開いてる箱の端に一致してたら何もしない。箱の端に一致してなかったらエラーで落ちる
-          9474 (recur result x y)
-          ;; 中央から下、中央から右のヤツ
-          9484 (recur (conj result {:position {:base {:x x :y y}}})
-                      (inc x) y)
-          ;; 中央から左、中央から下、中央から右のヤツ
-          9516 (recur (conj result {:position {:base {:x x :y y}}}) x y) ;; 既存の箱のlengthを更新 and 次の箱を始める
-          ;; 改行
-          ;; TODO: 改行コードは他にもある
-          10 (recur result x (inc y))
+          9474 (do (unread reader c)
+                   ;; TODO: 同じx座標に端を持ち、かつheightが確定してないやつを探して、コンテンツを詰める
+                   (read-body reader))
           ;; end of stream
           -1 result
-          (recur result (inc x) y))))))
+          (recur result))))))
