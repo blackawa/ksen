@@ -16,19 +16,26 @@
   ;; |
   ;; +--
   ;; |
-  (boolean (some #{(char 9484) (char 9500)} #{c})))
+  ;; (char 9516)
+  ;; --+--
+  ;;   |
+  (boolean (some #{(char 9484) (char 9500) (char 9516)} #{c})))
 
-(defn- find-right-x-of-box [m top]
-  (index-of (fn [c]
-              ;; (char 9488)
-              ;; --+
-              ;;   |
-              ;; (char 9508)
-              ;;   |
-              ;; --+
-              ;;   |
-              (boolean (some #{(char 9488) (char 9508)} #{c})))
-            (nth m top)))
+(defn- find-right-x-of-box [m left top]
+  (->> (subs (nth m top) (inc left))
+       (index-of (fn [c]
+                   ;; (char 9488)
+                   ;; --+
+                   ;;   |
+                   ;; (char 9508)
+                   ;;   |
+                   ;; --+
+                   ;;   |
+                   ;; (char 9516)
+                   ;; --+--
+                   ;;   |
+                   (boolean (some #{(char 9488) (char 9508) (char 9516)} #{c}))))
+       (+ (inc left))))
 
 (defn- find-bottom-y-of-box [m right top]
   (->> (subvec m (inc top))
@@ -41,11 +48,14 @@
                    ;;   |
                    ;; --+
                    ;;   |
-                   (boolean (some #{(char 9496) (char 9508)} #{c}))))
+                   ;; (char 9524)
+                   ;;   |
+                   ;; --+--
+                   (boolean (some #{(char 9496) (char 9508) (char 9524)} #{c}))))
        (+ (inc top))))
 
 (defn- find-path-from-left-top [m x y]
-  (let [right (find-right-x-of-box m y)
+  (let [right (find-right-x-of-box m x y)
         bottom (find-bottom-y-of-box m right y)]
     [[x y] [right y] [right bottom] [x bottom]]))
 
@@ -54,19 +64,9 @@
        (sort-by (fn [[x y]] (+ x y)))
        first))
 
-(defn- right-top [path]
-  (->> path
-       (sort-by (fn [[x y]] (- y x)))
-       first))
-
 (defn- right-bottom [path]
   (->> path
        (sort-by (fn [[x y]] (- 0 (+ x y))))
-       first))
-
-(defn- left-bottom [path]
-  (->> path
-       (sort-by (fn [[x y]] (- x y)))
        first))
 
 (defn find-content [m path]

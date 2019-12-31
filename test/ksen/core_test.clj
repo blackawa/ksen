@@ -18,7 +18,7 @@
 └───┘
 "))))
 
-(deftest read-multiple-row-from-single-box
+(deftest read-multiple-rows-from-single-box
   (is (= [{:path [[0 0] [4 0] [4 5] [0 5]]
            :content "abc\ndef\nghi\njkl"}]
          (target/read-str "┌───┐
@@ -29,7 +29,7 @@
 └───┘
 "))))
 
-(deftest read-single-row-from-vertical-multiple-box
+(deftest read-single-row-from-vertical-multiple-boxes
   (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
            :content "abc"}
           {:path [[0 2] [4 2] [4 4] [0 4]]
@@ -39,4 +39,14 @@
 ├───┤
 │def│
 └───┘
+"))))
+
+(deftest read-single-row-from-horizontal-multiple-boxes
+  (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
+           :content "abc"}
+          {:path [[4 0] [8 0] [8 2] [4 2]]
+           :content "def"}]
+         (target/read-str "┌───┬───┐
+│abc│def│
+└───┴───┘
 "))))
