@@ -1,14 +1,16 @@
 # ksen
 
-Table parser drawn by box drawing character.
+Parse tables drawn with box-drawing characters.
 
 ## Usage
-
-FIXME
+```
+user> (require '[ksen.core :as ksen])
+user> (ksen/read-str some-table)
+```
 
 ## License
 
-Copyright © 2019 FIXME
+Copyright © 2019 blackawa
 
 This program and the accompanying materials are made available under the
 terms of the Eclipse Public License 2.0 which is available at

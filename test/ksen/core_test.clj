@@ -82,3 +82,16 @@
 │gh│ijkl│
 └──┴────┘
 "))))
+
+(deftest read-independent-boxes
+  (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
+           :content "abc"}
+          {:path [[0 3] [4 3] [4 5] [0 5]]
+           :content "def"}]
+         (target/read-str "┌───┐
+│abc│
+└───┘
+┌───┐
+│def│
+└───┘
+"))))
