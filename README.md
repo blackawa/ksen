@@ -12,12 +12,15 @@
 # ksen
 
 Parse tables drawn with box-drawing characters.
+I dedicate this library to unfortunate friend who have to parse crazy text data like me.
 
 ## Usage
 ```
 user> (require '[ksen.core :as ksen])
 user> (ksen/read-str some-table)
 ```
+
+Look tests for input and output.
 
 ## License
 
