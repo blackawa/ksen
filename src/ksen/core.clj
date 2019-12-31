@@ -1,33 +1,79 @@
-(ns ksen.core)
+(ns ksen.core
+  (:import [java.io StringReader PushbackReader])
+  (:require [ksen.characters :as c]))
 
-(defn read-str
-  [s]
-  ;; TODO: 行を読み込むためのバッファを用意する
-  ;; TODO: 区切り線が出てきた位置を記憶しつつ1行読む
-  ;; TODO: 2行目は、区切り位置を見比べながらデータを格納していく
-  ;; TODO: 横線が箱を閉じる形で表れたら、データを確定する。
-  ;; 多分、確定前の一時バッファと確定したデータを貯めるバッファの2つが必要
-  ;; clojure.data.jsonはloopでちょっとずつ結果を蓄積していってる
-  ;; https://github.com/clojure/data.json/blob/master/src/main/clojure/clojure/data/json.clj#L36-L57
-  ;; ここらへんで、codepointとそれが来た時の処理を生成してる
-  (let [reader (java.io.StringReader. s)]
-    (loop [result []
-           x 0
-           y 0]
-      (let [c (.read reader)]
-        ;; TODO: 閉じ角が来たらlengthを記録する。もし次のセルが始まるならそれも記録する
-        (case c
-          ;; 上から下のヤツ
-          ;; TODO: まだ開いてる箱の端に一致してたら何もしない。箱の端に一致してなかったらエラーで落ちる
-          9474 (recur result x y)
-          ;; 中央から下、中央から右のヤツ
-          9484 (recur (conj result {:position {:base {:x x :y y}}})
-                      (inc x) y)
-          ;; 中央から左、中央から下、中央から右のヤツ
-          9516 (recur (conj result {:position {:base {:x x :y y}}}) x y) ;; 既存の箱のlengthを更新 and 次の箱を始める
-          ;; 改行
-          ;; TODO: 改行コードは他にもある
-          10 (recur result x (inc y))
-          ;; end of stream
-          -1 result
-          (recur result (inc x) y))))))
+(defn- index-of [f coll]
+  (->> coll
+       (map-indexed (fn [i c] [i c]))
+       (filter #(f (second %)))
+       first
+       first))
+
+(defn- left-top-corner? [c]
+  (->> #{c}
+       (some (into #{} (concat c/left-top
+                               c/left-middle
+                               c/top-middle
+                               c/middle-middle)))
+       boolean))
+
+(defn- find-right-x-of-box [m left top]
+  (->> (subs (nth m top) (inc left))
+       (index-of (fn [c]
+                   (boolean (some (into #{} (concat c/right-top
+                                                    c/right-middle
+                                                    c/top-middle
+                                                    c/middle-middle))
+                                  #{c}))))
+       (+ (inc left))))
+
+(defn- find-bottom-y-of-box [m right top]
+  (->> (subvec m (inc top))
+       (map #(nth % right))
+       (index-of (fn [c]
+                   (boolean (some (into #{} (concat c/right-bottom
+                                                    c/right-middle
+                                                    c/bottom-middle
+                                                    c/middle-middle))
+                                  #{c}))))
+       (+ (inc top))))
+
+(defn- find-path-from-left-top [m x y]
+  (let [right (find-right-x-of-box m x y)
+        bottom (find-bottom-y-of-box m right y)]
+    [[x y] [right y] [right bottom] [x bottom]]))
+
+(defn- left-top [path]
+  (->> path
+       (sort-by (fn [[x y]] (+ x y)))
+       first))
+
+(defn- right-bottom [path]
+  (->> path
+       (sort-by (fn [[x y]] (- 0 (+ x y))))
+       first))
+
+(defn find-content [m path]
+  (let [[left top right bottom] (concat (left-top path) (right-bottom path))]
+    (->> (subvec m (inc top) bottom)
+         (map (fn [s] (subs s (inc left) right)))
+         (map (partial apply str))
+         (clojure.string/join "\n"))))
+
+(defn read-str [s]
+  (let [m (->> (clojure.string/split s #"\n")
+               (into []))
+        width (count (first m))
+        height (count m)]
+    (loop [result [] x 0 y 0]
+      (let [c (try (-> m (nth y) (nth x))
+                   (catch java.lang.StringIndexOutOfBoundsException e
+                     " "))
+            result (if (left-top-corner? c)
+                     (let [path (find-path-from-left-top m x y)
+                           content (find-content m path)]
+                       (conj result {:path path :content content}))
+                     result)]
+        (cond (and (= (+ x 1) width) (= (+ y 1) height)) result
+              (< (+ x 1) width) (recur result (inc x) y)
+              (and (= (+ x 1) width) (< (+ y 1) height)) (recur result 0 (inc y)))))))
