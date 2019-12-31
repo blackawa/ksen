@@ -11,9 +11,9 @@
 "))))
 
 (deftest read-single-box-2
-  (is (= [{:path [[0 0] [2 0] [2 2] [0 2]]
-           :content "2"}]
-         (target/read-str "┌─┐
-│2│
-└─┘
+  (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
+           :content "abc"}]
+         (target/read-str "┌───┐
+│abc│
+└───┘
 "))))

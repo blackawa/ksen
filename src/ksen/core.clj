@@ -42,9 +42,29 @@
               (throw-box-broken-exception nil))]
       [[x y] [right-top-x y] [right-top-x right-bottom-y] [left-bottom-x right-bottom-y]])))
 
+(defn- left-top [path]
+  (->> path
+       (sort-by (fn [[x y]] (+ x y)))
+       first))
+
+(defn- right-top [path]
+  (->> path
+       (sort-by (fn [[x y]] (- y x)))
+       first))
+
+(defn- right-bottom [path]
+  (->> path
+       (sort-by (fn [[x y]] (- 0 (+ x y))))
+       first))
+
+(defn- left-bottom [path]
+  (->> path
+       (sort-by (fn [[x y]] (- x y)))
+       first))
+
 (defn find-content [m path]
-  ;; TODO: 罫線がつながったら、そのpathの内部にあるコンテンツを全部抜き出す
-  "1")
+  ;; TODO: マジックナンバーを消す
+  (-> m (nth 1) (nth 1) str))
 
 (defn read-str [s]
   (let [m (->> (clojure.string/split s #"\n")
