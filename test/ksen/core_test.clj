@@ -18,7 +18,7 @@
 └───┘
 "))))
 
-(deftest read-single-row-from-single-box
+(deftest read-multiple-row-from-single-box
   (is (= [{:path [[0 0] [4 0] [4 5] [0 5]]
            :content "abc\ndef\nghi\njkl"}]
          (target/read-str "┌───┐
@@ -26,5 +26,17 @@
 │def│
 │ghi│
 │jkl│
+└───┘
+"))))
+
+(deftest read-single-row-from-vertical-multiple-box
+  (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
+           :content "abc"}
+          {:path [[0 2] [4 2] [4 4] [0 4]]
+           :content "def"}]
+         (target/read-str "┌───┐
+│abc│
+├───┤
+│def│
 └───┘
 "))))

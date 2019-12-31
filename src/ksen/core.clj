@@ -1,20 +1,6 @@
 (ns ksen.core
   (:import [java.io StringReader PushbackReader]))
 
-;; note
-;; (char 9484)
-;;  +--
-;;  |
-;; (char 9488)
-;; --+
-;;   |
-;; (char 9496)
-;;   |
-;; --+
-;; (char 9492)
-;; |
-;; +--
-
 (defn- index-of [f coll]
   (->> coll
        (map-indexed (fn [i c] [i c]))
@@ -22,25 +8,36 @@
        first
        first))
 
-;; 基点から罫線をつないでいき、元の座標に戻るまで調べる
+(defn- find-right-x-of-box [m top]
+  (index-of (fn [c]
+              ;; (char 9488)
+              ;; --+
+              ;;   |
+              ;; (char 9508)
+              ;;   |
+              ;; --+
+              ;;   |
+              (or (= (char 9488) c)
+                  (= (char 9508) c)))
+            (nth m top)))
+
+(defn- find-bottom-y-of-box [m right]
+  (index-of (fn [c]
+              ;; (char 9496)
+              ;;   |
+              ;; --+
+              ;; (char 9508)
+              ;;   |
+              ;; --+
+              ;;   |
+              (or (= (char 9496) c)
+                  (= (char 9508) c)))
+            (map #(nth % right) m)))
+
 (defn- find-path-from-left-top [m x y]
-  ;; FIXME: 元の座標に戻らない場合は例外を送出して死なせる
-  (letfn [(throw-box-broken-exception [c]
-            (throw (ex-info "Broken box"
-                            {:type ::broken-box
-                             :searching-for c})))
-          (check-broken [n c]
-            (when (nil? n)
-              (throw-box-broken-exception c)))]
-    (let [right-top-x (index-of #(= (char 9488) %) (nth m y))
-          _ (check-broken right-top-x (char 9488))
-          right-bottom-y (index-of #(= (char 9496) %) (map #(nth % right-top-x) m))
-          _ (check-broken right-bottom-y (char 9496))
-          left-bottom-x (index-of #(= (char 9492) %) (nth m right-bottom-y))
-          _ (check-broken left-bottom-x (char 9492))
-          _ (when (not (= left-bottom-x x))
-              (throw-box-broken-exception nil))]
-      [[x y] [right-top-x y] [right-top-x right-bottom-y] [left-bottom-x right-bottom-y]])))
+  (let [right (find-right-x-of-box m y)
+        bottom (find-bottom-y-of-box m right)]
+    [[x y] [right y] [right bottom] [x bottom]]))
 
 (defn- left-top [path]
   (->> path
@@ -79,6 +76,9 @@
       :content (str (get-by-point m 1 1))}]
     (loop [result [] x 0 y 0]
       (let [c (-> m (nth y) (nth x))
+            ;; (char 9484)
+            ;;  +--
+            ;;  |
             result (if (= c (char 9484))
                      (let [path (find-path-from-left-top m x y)
                            content (find-content m path)]
