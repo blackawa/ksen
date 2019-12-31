@@ -1,5 +1,6 @@
 (ns ksen.core
-  (:import [java.io StringReader PushbackReader]))
+  (:import [java.io StringReader PushbackReader])
+  (:require [ksen.characters :as c]))
 
 (defn- index-of [f coll]
   (->> coll
@@ -9,49 +10,32 @@
        first))
 
 (defn- left-top-corner? [c]
-  ;; (char 9484)
-  ;; +--
-  ;; |
-  ;; (char 9500)
-  ;; |
-  ;; +--
-  ;; |
-  ;; (char 9516)
-  ;; --+--
-  ;;   |
-  (boolean (some #{(char 9484) (char 9500) (char 9516)} #{c})))
+  (->> #{c}
+       (some (into #{} (concat c/left-top
+                               c/left-middle
+                               c/top-middle
+                               c/middle-middle)))
+       boolean))
 
 (defn- find-right-x-of-box [m left top]
   (->> (subs (nth m top) (inc left))
        (index-of (fn [c]
-                   ;; (char 9488)
-                   ;; --+
-                   ;;   |
-                   ;; (char 9508)
-                   ;;   |
-                   ;; --+
-                   ;;   |
-                   ;; (char 9516)
-                   ;; --+--
-                   ;;   |
-                   (boolean (some #{(char 9488) (char 9508) (char 9516)} #{c}))))
+                   (boolean (some (into #{} (concat c/right-top
+                                                    c/right-middle
+                                                    c/top-middle
+                                                    c/middle-middle))
+                                  #{c}))))
        (+ (inc left))))
 
 (defn- find-bottom-y-of-box [m right top]
   (->> (subvec m (inc top))
        (map #(nth % right))
        (index-of (fn [c]
-                   ;; (char 9496)
-                   ;;   |
-                   ;; --+
-                   ;; (char 9508)
-                   ;;   |
-                   ;; --+
-                   ;;   |
-                   ;; (char 9524)
-                   ;;   |
-                   ;; --+--
-                   (boolean (some #{(char 9496) (char 9508) (char 9524)} #{c}))))
+                   (boolean (some (into #{} (concat c/right-bottom
+                                                    c/right-middle
+                                                    c/bottom-middle
+                                                    c/middle-middle))
+                                  #{c}))))
        (+ (inc top))))
 
 (defn- find-path-from-left-top [m x y]
@@ -80,12 +64,11 @@
   (let [m (->> (clojure.string/split s #"\n")
                (into []))
         width (count (first m))
-        height (count m)
-        get-by-point (fn [m x y] (-> m (nth x) (nth y)))]
-    [{:path [[0 0] [width 0] [width height] [0 height]]
-      :content (str (get-by-point m 1 1))}]
+        height (count m)]
     (loop [result [] x 0 y 0]
-      (let [c (-> m (nth y) (nth x))
+      (let [c (try (-> m (nth y) (nth x))
+                   (catch java.lang.StringIndexOutOfBoundsException e
+                     " "))
             result (if (left-top-corner? c)
                      (let [path (find-path-from-left-top m x y)
                            content (find-content m path)]

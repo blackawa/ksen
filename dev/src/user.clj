@@ -7,7 +7,7 @@
 ;; workaround for https://github.com/clojure-emacs/cider/issues/2686
 (set-refresh-dirs "dev/src" "src" "test")
 
-(defn test
+(defn- test
   ([]
    (test "test"))
   ([test-path]

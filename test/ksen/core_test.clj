@@ -29,7 +29,7 @@
 └───┘
 "))))
 
-(deftest read-single-row-from-vertical-multiple-boxes
+(deftest read-from-vertical-multiple-boxes
   (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
            :content "abc"}
           {:path [[0 2] [4 2] [4 4] [0 4]]
@@ -41,7 +41,7 @@
 └───┘
 "))))
 
-(deftest read-single-row-from-horizontal-multiple-boxes
+(deftest read-from-horizontal-multiple-boxes
   (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
            :content "abc"}
           {:path [[4 0] [8 0] [8 2] [4 2]]
@@ -49,4 +49,36 @@
          (target/read-str "┌───┬───┐
 │abc│def│
 └───┴───┘
+"))))
+
+(deftest read-from-crossing-boxes
+  (is (= [{:path [[0 0] [4 0] [4 2] [0 2]]
+           :content "abc"}
+          {:path [[4 0] [8 0] [8 2] [4 2]]
+           :content "def"}
+          {:path [[0 2] [4 2] [4 4] [0 4]]
+           :content "ghi"}
+          {:path [[4 2] [8 2] [8 4] [4 4]]
+           :content "jkl"}]
+         (target/read-str "┌───┬───┐
+│abc│def│
+├───┼───┤
+│ghi│jkl│
+└───┴───┘
+"))))
+
+(deftest read-from-horizontally-shifted-boxes
+  (is (= [{:path [[0 0] [5 0] [5 2] [0 2]]
+           :content "abcd"}
+          {:path [[5 0] [8 0] [8 2] [5 2]]
+           :content "ef"}
+          {:path [[0 2] [3 2] [3 4] [0 4]]
+           :content "gh"}
+          {:path [[3 2] [8 2] [8 4] [3 4]]
+           :content "ijkl"}]
+         (target/read-str "┌────┬──┐
+│abcd│ef│
+├──┬─┴──┤
+│gh│ijkl│
+└──┴────┘
 "))))
