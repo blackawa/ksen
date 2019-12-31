@@ -63,12 +63,15 @@
        first))
 
 (defn find-content [m path]
-  ;; TODO: マジックナンバーを消す
-  (-> m (nth 1) (nth 1) str))
+  (let [[left top right bottom] (concat (left-top path) (right-bottom path))]
+    (->> (subvec m (inc top) bottom)
+         (map (fn [s] (subs s (inc left) right)))
+         (map (partial apply str))
+         (clojure.string/join "\n"))))
 
 (defn read-str [s]
   (let [m (->> (clojure.string/split s #"\n")
-               (map (partial into [])))
+               (into []))
         width (count (first m))
         height (count m)
         get-by-point (fn [m x y] (-> m (nth x) (nth y)))]
