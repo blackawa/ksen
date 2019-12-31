@@ -8,6 +8,16 @@
        first
        first))
 
+(defn- left-top-corner? [c]
+  ;; (char 9484)
+  ;; +--
+  ;; |
+  ;; (char 9500)
+  ;; |
+  ;; +--
+  ;; |
+  (boolean (some #{(char 9484) (char 9500)} #{c})))
+
 (defn- find-right-x-of-box [m top]
   (index-of (fn [c]
               ;; (char 9488)
@@ -17,26 +27,26 @@
               ;;   |
               ;; --+
               ;;   |
-              (or (= (char 9488) c)
-                  (= (char 9508) c)))
+              (boolean (some #{(char 9488) (char 9508)} #{c})))
             (nth m top)))
 
-(defn- find-bottom-y-of-box [m right]
-  (index-of (fn [c]
-              ;; (char 9496)
-              ;;   |
-              ;; --+
-              ;; (char 9508)
-              ;;   |
-              ;; --+
-              ;;   |
-              (or (= (char 9496) c)
-                  (= (char 9508) c)))
-            (map #(nth % right) m)))
+(defn- find-bottom-y-of-box [m right top]
+  (->> (subvec m (inc top))
+       (map #(nth % right))
+       (index-of (fn [c]
+                   ;; (char 9496)
+                   ;;   |
+                   ;; --+
+                   ;; (char 9508)
+                   ;;   |
+                   ;; --+
+                   ;;   |
+                   (boolean (some #{(char 9496) (char 9508)} #{c}))))
+       (+ (inc top))))
 
 (defn- find-path-from-left-top [m x y]
   (let [right (find-right-x-of-box m y)
-        bottom (find-bottom-y-of-box m right)]
+        bottom (find-bottom-y-of-box m right y)]
     [[x y] [right y] [right bottom] [x bottom]]))
 
 (defn- left-top [path]
@@ -76,10 +86,7 @@
       :content (str (get-by-point m 1 1))}]
     (loop [result [] x 0 y 0]
       (let [c (-> m (nth y) (nth x))
-            ;; (char 9484)
-            ;;  +--
-            ;;  |
-            result (if (= c (char 9484))
+            result (if (left-top-corner? c)
                      (let [path (find-path-from-left-top m x y)
                            content (find-content m path)]
                        (conj result {:path path :content content}))
