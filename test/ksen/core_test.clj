@@ -95,3 +95,16 @@
 │def│
 └───┘
 "))))
+
+(deftest ignore-blank-line-at-first
+  (is (= [{:path [[0 1] [4 1] [4 3] [0 3]]
+           :content "abc"}
+          {:path [[0 3] [5 3] [5 5] [0 5]]
+           :content "defg"}]
+         (target/read-str "
+┌───┐
+│abc│
+├───┴┐
+│defg│
+└────┘
+"))))

@@ -62,9 +62,7 @@
 
 (defn read-str [s]
   (let [m (->> (clojure.string/split s #"\n")
-               (into []))
-        width (count (first m))
-        height (count m)]
+               (into []))]
     (loop [result [] x 0 y 0]
       (let [c (try (-> m (nth y) (nth x))
                    (catch java.lang.StringIndexOutOfBoundsException e
@@ -74,6 +72,9 @@
                            content (find-content m path)]
                        (conj result {:path path :content content}))
                      result)]
-        (cond (and (= (+ x 1) width) (= (+ y 1) height)) result
-              (< (+ x 1) width) (recur result (inc x) y)
-              (and (= (+ x 1) width) (< (+ y 1) height)) (recur result 0 (inc y)))))))
+        (cond (and (= (+ x 1) (count (nth m y))) (= (+ y 1) (count m)))
+              result
+              (< (+ x 1) (count (nth m y)))
+              (recur result (inc x) y)
+              :else
+              (recur result 0 (inc y)))))))
