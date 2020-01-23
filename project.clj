@@ -1,4 +1,4 @@
-(defproject ksen "0.1.2"
+(defproject ksen "0.1.3-SNAPSHOT"
   :description "Parse tables drawn with box-drawing characters"
   :url "http://github.com/blackawa/ksen"
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
